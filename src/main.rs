@@ -3,13 +3,9 @@ use std::io::Read;
 
 use logos::Logos;
 
-mod model;
-mod detector;
-mod traits;
-
-use crate::detector::{NaiveDetector, PairDetector, NaiveForwardDetector};
-use crate::model::{PlainTextToken, Mistake, NaiveSettings, PairSettings};
-use crate::traits::Detector;
+use huncomma::detector::{NaiveDetector, PairDetector, NaiveForwardDetector};
+use huncomma::model::{PlainTextToken, Mistake, NaiveSettings, PairSettings};
+use huncomma::traits::Detector;
 
 fn combine_mistakes(m1: &Mistake, m2: &Mistake) -> Mistake {
     Mistake::new_dyn(
@@ -84,7 +80,7 @@ fn main() -> io::Result<()> {
             break;
         }
 
-        let mut tokens = PlainTextToken::lexer(buffer.as_str());
+        let tokens = PlainTextToken::lexer(buffer.as_str());
 
         if merge_results {
             let c_errors = detectors.iter_mut().map(|detector| detector.detect_errors(&mut tokens.clone())).collect();
