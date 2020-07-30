@@ -1,6 +1,6 @@
 # huncomma_terminal
 
-This is a terminal frontend for the `huncomma` library, which utilizes all of it's detectors.
+This is a terminal frontend for the `huncomma` library, which utilizes all of its detectors.
 
 ## How to use
 
@@ -8,7 +8,7 @@ This is a terminal frontend for the `huncomma` library, which utilizes all of it
 
 Right now, this is not uploaded to crates.io, so you have to clone this repo and compile it yourself.
 
-`git clone ...`
+`git clone git@github.com:VaranTavers/huncomma_terminal.git`
 
 
 `cargo build --release`
