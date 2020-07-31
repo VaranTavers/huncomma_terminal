@@ -1,8 +1,38 @@
-mind;0.80;mind; páros kötőszó, amellyel többszörösen használt, egynemű mondatrészeket kapcsolunk (is, is)
+abban;0.80;hogy amiben;
+abba;0.80;hogy amibe;
+abból;0.80;hogy amiből;
+addig;0.80;hogy míg ameddig;
+afelé;0.80;hogy;
+ahelyett;0.80;hogy;
+ahhoz;0.80;hogy;
+akként;0.80;hogy;
+akkora;0.80;hogy;
+akkorra;0.80;amikorra;
+alig;0.80;már máris;
+alighogy;0.80;már máris;
+amellett;0.80;hogy;
+amiatt;0.80;hogy;
+annyi;0.80;hogy;
+annyira;0.80;hogy;
+arra;0.80;hogy;
+arról;0.80;hogy;
+attól;0.80;hogy;
+avagy;0.70;avagy;
+avégett;0.70;hogy;
+avégre;0.70;hogy;
+azelőtt;0.70;hogy;
+azért;0.70;hogy;
+azóta;0.70;hogy mióta amióta;
+azután;0.70;hogy miután amiután;
 az;0.80;hogy aki ami kit mit ki mi;
 azt;0.80;hogy akit amit;
-úgy;0.80;mint hogy ahogy amint; módhatározói vagy fokhatározói mellékmondatra utaló szavak
-mivel;0.80;ezért;
 ha;0.80;akkor;
-abban;0.80;hogy;
+lehet;0.80;csak;
+mennél;0.80;annál;
+mert;0.80;hogy különben;
+minél;0.80;annál;
+mind;0.80;mind; páros kötőszó, amellyel többszörösen használt, egynemű mondatrészeket kapcsolunk (is, is)
+mivel;0.80;ezért;
 olyan;0.50;mint aki akit akiért ami amit amiért; összehasonlításra utaló szavak
+úgy;0.80;mint hogy ahogy amint; módhatározói vagy fokhatározói mellékmondatra utaló szavak
+vagy;0.70;vagy;
