@@ -13,7 +13,7 @@ use clap::{App, Arg};
 
 use utils::merge_mistakes;
 
-fn main_loop(detectors: &mut Vec<Box<dyn Detector>>, merge_results: bool) -> io::Result<Option<Vec<(usize, usize, Mistake)>>> {
+fn detect_errors_from_stdin(detectors: &mut Vec<Box<dyn Detector>>, merge_results: bool) -> io::Result<Option<Vec<(usize, usize, Mistake)>>> {
     let mut errors = Vec::new();
 
     let mut buffer = String::new();
@@ -62,7 +62,7 @@ fn main() -> io::Result<()> {
 
     let mut errors: Vec<(usize, usize, Mistake)> = Vec::new();
 
-    while let Some(mut err) = main_loop(&mut detectors, merge_results)?{
+    while let Some(mut err) = detect_errors_from_stdin(&mut detectors, merge_results)?{
         errors.append(&mut err);
     }
 
