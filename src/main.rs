@@ -1,12 +1,13 @@
 mod utils;
 
 use std::io;
+use std::fs;
 use std::io::Read;
 
 use logos::Logos;
 
-use huncomma::detector::{NaiveDetector, PairDetector, NaiveForwardDetector};
-use huncomma::model::{PlainTextToken, Mistake, NaiveSettings, PairSettings};
+use huncomma::detector::{NaiveDetector, PairDetector, NaiveForwardDetector, TypicalDetector};
+use huncomma::model::{PlainTextToken, Mistake, NaiveSettings, PairSettings, TypicalSettings};
 use huncomma::traits::Detector;
 
 use clap::{App, Arg};
@@ -47,12 +48,19 @@ fn main() -> io::Result<()> {
             .short("n")
             .long("no_merge")
             .help("Disables merging mistakes from different detectors. May make the program faster"))
+        .arg(Arg::with_name("min_cert")
+            .short("c")
+            .long("min_certainty")
+            .help("Sets the minimum certainty(%) that is required for an error to be shown.")
+            .takes_value(true)
+            .default_value("30"))
         .get_matches();
 
     let mut detectors: Vec<Box<dyn Detector>> = vec![
-        Box::new(NaiveDetector::new(NaiveSettings::new_from_file("naive.csv"))),
-        Box::new(NaiveForwardDetector::new(NaiveSettings::new_from_file("naive_forward.csv"))),
-        Box::new(PairDetector::new(PairSettings::new_from_file("pair.csv"))),
+        Box::new(NaiveDetector::new(NaiveSettings::new_from_string(fs::read_to_string("naive.csv")?))),
+        Box::new(NaiveForwardDetector::new(NaiveSettings::new_from_string(fs::read_to_string("naive_forward.csv")?))),
+        Box::new(PairDetector::new(PairSettings::new_from_string(fs::read_to_string("pair.csv")?))),
+        Box::new(TypicalDetector::new(TypicalSettings::new_from_string(fs::read_to_string("typical.csv")?))),
     ];
 
     let merge_results = match matches.occurrences_of("no_merge") {
@@ -66,8 +74,10 @@ fn main() -> io::Result<()> {
         errors.append(&mut err);
     }
 
+    let min_cert = matches.value_of("min_cert").unwrap().parse::<f64>().unwrap() / 100.0;
+
     for (r, c, mistake) in errors {
-        if mistake.prob > 0.30 {
+        if mistake.prob > min_cert {
             println!("ln: {}, col: {} potenciális vesszőhiba ({}%): {}", r, c, mistake.prob * 100.0, mistake.get_str());
         }
     }
