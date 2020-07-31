@@ -1,100 +1,83 @@
+mod utils;
+
 use std::io;
+use std::fs;
 use std::io::Read;
 
 use logos::Logos;
 
-use huncomma::detector::{NaiveDetector, PairDetector, NaiveForwardDetector};
-use huncomma::model::{PlainTextToken, Mistake, NaiveSettings, PairSettings};
+use huncomma::detector::{NaiveDetector, PairDetector, NaiveForwardDetector, TypicalDetector};
+use huncomma::model::{PlainTextToken, Mistake, NaiveSettings, PairSettings, TypicalSettings};
 use huncomma::traits::Detector;
 
-fn combine_mistakes(m1: &Mistake, m2: &Mistake) -> Mistake {
-    Mistake::new_dyn(
-        format!("{}\n\t{}", m1.get_str(), m2.get_str()),
-        m1.prob + (1.0 - m1.prob) * m2.prob
-    )
-}
+use clap::{App, Arg};
 
-// I'm sorry for this. I hope I can make it more pretty.
-fn merge_mistakes(mistake_vec: Vec<Vec<(usize, usize, Mistake)>>) -> Vec<(usize, usize, Mistake)> {
-    if mistake_vec.len() == 0 {
-        return Vec::new();
+use utils::merge_mistakes;
+
+fn detect_errors_from_stdin(detectors: &mut Vec<Box<dyn Detector>>, merge_results: bool) -> io::Result<Option<Vec<(usize, usize, Mistake)>>> {
+    let mut errors = Vec::new();
+
+    let mut buffer = String::new();
+    io::stdin().read_to_string(&mut buffer)?;
+
+    if buffer.is_empty() {
+        return Ok(None);
     }
-    let mut iter = mistake_vec.iter();
-    let mut first = iter.next().unwrap().clone();
-    let mut result = Vec::new();
-    for second in iter {
-        let mut first_iter = first.iter();
-        let mut second_iter = second.iter();
 
-        let mut first_obj = first_iter.next();
-        let mut second_obj = second_iter.next();
+    let tokens = PlainTextToken::lexer(buffer.as_str());
 
-        while first_obj.is_some() || second_obj.is_some() {
-            if first_obj.is_none() {
-                result.push(second_obj.unwrap().clone());
-                second_obj = second_iter.next();
-            } else if second_obj.is_none() {
-                result.push(first_obj.unwrap().clone());
-                first_obj = first_iter.next();
-            } else {
-                let (r1, c1, m1) = first_obj.unwrap();
-                let (r2, c2, m2) = second_obj.unwrap();
-
-                if r1 == r2 && c1 == c2 {
-                    result.push((*r1, *c1, combine_mistakes(m1, m2)));
-                    first_obj = first_iter.next();
-                    second_obj = second_iter.next();
-                } else if r1 < r2 || (r1 == r2 && c1 < c2) {
-                    result.push(first_obj.unwrap().clone());
-                    first_obj = first_iter.next();
-                } else {
-                    result.push(second_obj.unwrap().clone());
-                    second_obj = second_iter.next();
-                }
-            }
+    if merge_results {
+        let c_errors = detectors.iter_mut().map(|detector| detector.detect_errors(&mut tokens.clone())).collect();
+        errors.append(&mut merge_mistakes(c_errors));
+    } else {
+        for detector in detectors.iter_mut() {
+            let mut c_errors = detector.detect_errors(&mut tokens.clone());
+            errors.append(&mut c_errors);
         }
-
-        first = result;
-        result = Vec::new();
     }
 
-    return first;
+    Ok(Some(errors))
 }
 
 fn main() -> io::Result<()> {
+    let matches = App::new("huncomma_terminal")
+        .version("0.1")
+        .author("Tasnádi Zoltán <tasnadi98@tutanota.com>")
+        .about("Detects some potential mistakes regarding the usage of commas in Hungarian.")
+        .arg(Arg::with_name("no_merge")
+            .short("n")
+            .long("no_merge")
+            .help("Disables merging mistakes from different detectors. May make the program faster"))
+        .arg(Arg::with_name("min_cert")
+            .short("c")
+            .long("min_certainty")
+            .help("Sets the minimum certainty(%) that is required for an error to be shown.")
+            .takes_value(true)
+            .default_value("30"))
+        .get_matches();
+
     let mut detectors: Vec<Box<dyn Detector>> = vec![
-        Box::new(NaiveDetector::new(NaiveSettings::new_from_file("naive.csv"))),
-        Box::new(NaiveForwardDetector::new(NaiveSettings::new_from_file("naive_forward.csv"))),
-        Box::new(PairDetector::new(PairSettings::new_from_file("pair.csv"))),
+        Box::new(NaiveDetector::new(NaiveSettings::new_from_string(fs::read_to_string("naive.csv")?))),
+        Box::new(NaiveForwardDetector::new(NaiveSettings::new_from_string(fs::read_to_string("naive_forward.csv")?))),
+        Box::new(PairDetector::new(PairSettings::new_from_string(fs::read_to_string("pair.csv")?))),
+        Box::new(TypicalDetector::new(TypicalSettings::new_from_string(fs::read_to_string("typical.csv")?))),
     ];
 
-    let merge_results = true;
+    let merge_results = match matches.occurrences_of("no_merge") {
+        0 => true,
+        _ => false,
+    };
 
     let mut errors: Vec<(usize, usize, Mistake)> = Vec::new();
 
-    loop {
-        let mut buffer = String::new();
-        io::stdin().read_to_string(&mut buffer)?;
-
-        if buffer.is_empty() {
-            break;
-        }
-
-        let tokens = PlainTextToken::lexer(buffer.as_str());
-
-        if merge_results {
-            let c_errors = detectors.iter_mut().map(|detector| detector.detect_errors(&mut tokens.clone())).collect();
-            errors.append(&mut merge_mistakes(c_errors));
-        } else {
-            for detector in detectors.iter_mut() {
-                let mut c_errors = detector.detect_errors(&mut tokens.clone());
-                errors.append(&mut c_errors);
-            }
-        }
+    while let Some(mut err) = detect_errors_from_stdin(&mut detectors, merge_results)?{
+        errors.append(&mut err);
     }
 
+    let min_cert = matches.value_of("min_cert").unwrap().parse::<f64>().unwrap() / 100.0;
+
     for (r, c, mistake) in errors {
-        if mistake.prob > 0.30 {
+        if mistake.prob > min_cert {
             println!("ln: {}, col: {} potenciális vesszőhiba ({}%): {}", r, c, mistake.prob * 100.0, mistake.get_str());
         }
     }
