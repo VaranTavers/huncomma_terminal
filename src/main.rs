@@ -7,7 +7,7 @@ use std::io::Read;
 use logos::Logos;
 
 use huncomma::detector::{NaiveDetector, PairDetector, NaiveForwardDetector, TypicalDetector};
-use huncomma::model::{PlainTextToken, Mistake, NaiveSettings, PairSettings, TypicalSettings};
+use huncomma::model::{PlainTextToken, Mistake, NaiveSettings, PairSettings};
 use huncomma::traits::Detector;
 
 use clap::{App, Arg};
@@ -60,7 +60,7 @@ fn main() -> io::Result<()> {
         Box::new(NaiveDetector::new(NaiveSettings::new_from_string(fs::read_to_string("naive.csv")?))),
         Box::new(NaiveForwardDetector::new(NaiveSettings::new_from_string(fs::read_to_string("naive_forward.csv")?))),
         Box::new(PairDetector::new(PairSettings::new_from_string(fs::read_to_string("pair.csv")?))),
-        Box::new(TypicalDetector::new(TypicalSettings::new_from_string(fs::read_to_string("typical.csv")?))),
+        Box::new(TypicalDetector::new(NaiveSettings::new_from_string(fs::read_to_string("typical.csv")?))),
     ];
 
     let merge_results = match matches.occurrences_of("no_merge") {
